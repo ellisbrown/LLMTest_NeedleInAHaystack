@@ -1,3 +1,4 @@
+from functools import lru_cache
 import asyncio
 import glob
 import json
@@ -11,6 +12,35 @@ from .providers import ModelProvider
 
 from asyncio import Semaphore
 from datetime import datetime, timezone
+
+
+color_to_code = {
+    'red': '\033[91m',
+    'green': '\033[92m',
+    'yellow': '\033[93m',
+    'blue': '\033[94m',
+    'purple': '\033[95m',
+    'orange': '\033[38;5;208m',
+    'cyan': '\033[96m',
+    'white': '\033[97m',
+    'black': '\033[98m',
+    'lightgrey': '\033[37m',
+    'bold': '\033[1m',
+    'underline': '\033[4m',
+    'end': '\033[0m'
+}
+
+def cprint(text, color='bold'):
+    if not color in color_to_code:
+        raise ValueError(f"Color {color} not supported.")
+    print(f"{color_to_code[color]}{text}{color_to_code['end']}")
+    
+def get_timestamp():
+    return datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+
+def clog(text, color='bold'):
+    cprint(f"[{get_timestamp()}] {text}", color)
+
 
 class LLMNeedleHaystackTester:
     """
@@ -123,9 +153,10 @@ class LLMNeedleHaystackTester:
     def sigmoid(self, x):
         return 1 / (1 + np.exp(-x))
     
-    async def bound_evaluate_and_log(self, sem, *args):
+    async def bound_evaluate_and_log(self, sem, context_length, depth_percent):
         async with sem:
-            await self.evaluate_and_log(*args)
+            await self.evaluate_and_log(context_length, depth_percent)
+
 
     async def run_test(self):
         sem = Semaphore(self.num_concurrent_requests)
@@ -134,7 +165,7 @@ class LLMNeedleHaystackTester:
         tasks = []
         for context_length in self.context_lengths:
             for depth_percent in self.document_depth_percents:
-                task = self.bound_evaluate_and_log(sem, context_length, depth_percent)
+                task = asyncio.create_task(self.bound_evaluate_and_log(sem, context_length, depth_percent))
                 tasks.append(task)
 
         # Wait for all tasks to complete
@@ -143,73 +174,67 @@ class LLMNeedleHaystackTester:
     async def evaluate_and_log(self, context_length, depth_percent):
         # Checks to see if you've already checked a length/percent/version.
         # This helps if the program stop running and you want to restart later
-        if self.save_results:
-            if self.result_exists(context_length, depth_percent):
-                return
+        if self.save_results and self.result_exists(context_length, depth_percent):
+            return
+        
+        id = f"CTX {context_length} @ {depth_percent}%"
+        clog(f"{id}: Starting", "red")
 
         # Go generate the required length context and place your needle statement in
         context = await self.generate_context(context_length, depth_percent)
 
+        clog(f"{id}: context generated.", "lightgrey")
+
         # Prepare your message to send to the model you're going to evaluate
         prompt = self.model_to_test.generate_prompt(context, self.retrieval_question)
 
+        clog(f"{id}: prompt generated.", "lightgrey")
+
         test_start_time = time.time()
-
-        # Go see if the model can answer the question to pull out your random fact
         response = await self.model_to_test.evaluate_model(prompt)
-
         test_end_time = time.time()
         test_elapsed_time = test_end_time - test_start_time
 
-        # Compare the reponse to the actual needle you placed
-        score = self.evaluation_model.evaluate_response(response)
+        clog(f"{id}: response received.", "lightgrey")
 
+        score = self.evaluation_model.evaluate_response(response)
         results = {
             # 'context' : context, # Uncomment this line if you'd like to save the context the model was asked to retrieve from. Warning: This will become very large.
-            'model' : self.model_name,
-            'context_length' : int(context_length),
-            'depth_percent' : float(depth_percent),
-            'version' : self.results_version,
-            'needle' : self.needle,
-            'model_response' : response,
-            'score' : score,
-            'test_duration_seconds' : test_elapsed_time,
-            'test_timestamp_utc' : datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S%z')
+            'model': self.model_name,
+            'context_length': int(context_length),
+            'depth_percent': float(depth_percent),
+            'version': self.results_version,
+            'needle': self.needle,
+            'model_response': response,
+            'score': score,
+            'test_duration_seconds': test_elapsed_time,
+            'test_timestamp_utc': datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S%z')
         }
 
         self.testing_results.append(results)
 
         if self.print_ongoing_status:
-            print (f"-- Test Summary -- ")
-            print (f"Duration: {test_elapsed_time:.1f} seconds")
-            print (f"Context: {context_length} tokens")
-            print (f"Depth: {depth_percent}%")
-            print (f"Score: {score}")
-            print (f"Response: {response}\n")
-
-        context_file_location = f'{self.model_name.replace(".", "_")}_len_{context_length}_depth_{int(depth_percent*100)}'
+            print(f"-- Test Summary --\nDuration: {test_elapsed_time:.1f} seconds\nContext: {context_length} tokens\nDepth: {depth_percent}%\nScore: {score}\nResponse: {response}\n")
 
         if self.save_contexts:
+            context_file_location = f'{self.model_name.replace(".", "_")}_len_{context_length}_depth_{int(depth_percent * 100)}'
             results['file_name'] = context_file_location
-
             # Save the context to file for retesting
             if not os.path.exists('contexts'):
                 os.makedirs('contexts')
-
             with open(f'contexts/{context_file_location}_context.txt', 'w') as f:
                 f.write(context)
-            
+
         if self.save_results:
             # Save the context to file for retesting
             if not os.path.exists(self.results_dir):
                 os.makedirs(self.results_dir)
-
+            
             # Save the result to file for retesting
             results_file = f'{context_file_location}_results.json'
             results_filepath = os.path.join(self.results_dir, results_file)
             with open(results_filepath, 'w') as f:
                 json.dump(results, f)
-    
 
         if self.seconds_to_sleep_between_completions:
             await asyncio.sleep(self.seconds_to_sleep_between_completions)
@@ -272,7 +297,7 @@ class LLMNeedleHaystackTester:
             # We want to make sure that we place our needle at a sentence break so we first see what token a '.' is
             period_tokens = self.model_to_test.encode_text_to_tokens('.')
             
-            # Then we iteration backwards until we find the first period
+            # Then we iterate backwards until we find the first period
             while tokens_new_context and tokens_new_context[-1] not in period_tokens:
                 insertion_point -= 1
                 tokens_new_context = tokens_context[:insertion_point]
@@ -288,6 +313,7 @@ class LLMNeedleHaystackTester:
     def get_context_length_in_tokens(self, context):
         return len(self.model_to_test.encode_text_to_tokens(context))
 
+    @lru_cache
     def read_context_files(self):
         context = ""
         max_context_length = max(self.context_lengths)
@@ -299,6 +325,7 @@ class LLMNeedleHaystackTester:
                     context += f.read()
         return context
 
+    @lru_cache
     def encode_and_trim(self, context, context_length):
         tokens = self.model_to_test.encode_text_to_tokens(context)
         if len(tokens) > context_length:
