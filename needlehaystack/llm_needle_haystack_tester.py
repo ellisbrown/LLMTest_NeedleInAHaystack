@@ -239,6 +239,7 @@ class LLMNeedleHaystackTester:
         if self.seconds_to_sleep_between_completions:
             await asyncio.sleep(self.seconds_to_sleep_between_completions)
 
+    @lru_cache
     def result_exists(self, context_length, depth_percent):
         """
         Checks to see if a result has already been evaluated or not
@@ -249,15 +250,25 @@ class LLMNeedleHaystackTester:
         
         for filename in os.listdir(self.results_dir):
             if filename.endswith('.json'):
-                with open(os.path.join(self.results_dir, filename), 'r') as f:
-                    result = json.load(f)
-                    context_length_met = result['context_length'] == context_length
-                    depth_percent_met = result['depth_percent'] == depth_percent
-                    version_met = result.get('version', 1) == self.results_version
-                    model_met = result['model'] == self.model_name
-                    if context_length_met and depth_percent_met and version_met and model_met:
-                        return True
+                filepath = os.path.join(self.results_dir, filename)
+                context_length_res, depth_percent_res, version_res, model_res = self.get_file_result(filepath)
+                context_length_met = context_length_res == context_length
+                depth_percent_met = depth_percent_res == depth_percent
+                version_met = version_res == self.results_version
+                model_met = model_res == self.model_name
+                if context_length_met and depth_percent_met and version_met and model_met:
+                    return True
         return False
+    
+    @lru_cache
+    def get_file_result(self, filepath):
+        try:
+            with open(filepath, 'r') as f:
+                result = json.load(f)
+            return result['context_length'], result['depth_percent'], result.get('version', 1), result['model']
+        except Exception as e:
+            print(f"Error reading {filepath}")
+            raise e
 
     async def generate_context(self, context_length, depth_percent):
         # Load up tiktoken so we navigate tokens more easily
