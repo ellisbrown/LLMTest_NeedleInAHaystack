@@ -60,7 +60,7 @@ def generate_plot(folder_path: str, model_name: str, max_ctx_len: int):
     cmap = LinearSegmentedColormap.from_list("custom_cmap", ["#F0496E", "#EBB839", "#0CD79F"])
 
     # Create the heatmap with better aesthetics
-    plt.figure(figsize=(8, 4))  # Can adjust these dimensions as needed
+    plt.figure(figsize=(10, 6))  # Can adjust these dimensions as needed
     sns.heatmap(
         pivot_table,
         # annot=True,
