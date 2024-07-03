@@ -11,4 +11,3 @@ python -m needlehaystack.run \
     --document_depth_percents "[50]" \
     --context_lengths "[2048]" \
     --results_dir ./results/test_llama3-8b-instruct
-
