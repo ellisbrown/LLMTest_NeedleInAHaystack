@@ -26,7 +26,7 @@ class LocalLlama3(ModelProvider):
                                       temperature = 0)
 
     def __init__(self,
-                 model_name: str = "meta-llama/Llama-2-7b-chat-hf",
+                 model_name: str = "meta-llama/Meta-Llama-3-8B-Instruct",
                  model_kwargs: dict = DEFAULT_MODEL_KWARGS):
         """
         Initializes the OpenAI model provider with a specific model.
@@ -63,15 +63,20 @@ class LocalLlama3(ModelProvider):
         """
         MAX_GEN_LENGTH = 128
         tokenized_prompts = self.tokenizer(prompt, return_tensors="pt")
-        input_ids = tokenized_prompts.input_ids.cuda()
+        input_ids = tokenized_prompts.input_ids.to(self.model.device)
 
         generation_output = self.model.generate(
             input_ids,
             max_new_tokens=MAX_GEN_LENGTH,
+            pad_token_id=self.tokenizer.eos_token_id,
+            eos_token_id=self.tokenizer.convert_tokens_to_ids("<|eot_id|>"),
+            do_sample=True,
             use_cache=True,
-            return_dict_in_generate=True)
-
-        output = self.tokenizer.decode(generation_output.sequences[:,input_ids.shape[1]:][0])
+            return_dict_in_generate=True
+        )
+        
+        response = generation_output.sequences[:,input_ids.shape[1]:][0]
+        output = self.tokenizer.decode(response, skip_special_tokens=True)
         return output
     
     def generate_prompt(self, context: str, retrieval_question: str) -> str | list[dict[str, str]]:
@@ -85,14 +90,14 @@ class LocalLlama3(ModelProvider):
         Returns:
             list[dict[str, str]]: A list of dictionaries representing the structured prompt, including roles and content for system and user messages.
         """
+
         return f"""
-<s>[INST] <<SYS>>
-You are a helpful AI bot that answers questions for a user. Keep your response short and direct
-<</SYS>>
+<s><|begin_of_text|><|start_header_id|>system<|end_header_id|>
+You are a helpful AI bot that answers questions for a user. Keep your response short and direct.<|eot_id|><|start_header_id|>user<|end_header_id|>
 { context }
 
 {retrieval_question} Don't give information outside the document or repeat your findings
-[/INST]</s>
+<|eot_id|><|start_header_id|>assistant<|end_header_id|>
 """
 
     
