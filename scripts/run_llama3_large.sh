@@ -8,7 +8,7 @@ source venv/bin/activate
 python -m needlehaystack.run \
     --provider llama3 \
     --model_name $MODEL \
-    --document_depth_percents "[50]" \
-    --context_lengths "[2048]" \
-    --results_dir ./results/test_llama3-8b-instruct
+    --results_dir ./results/linear_35x35_llama_3-8b-instruct \
+    --context_lengths_min 128 \
+    --context_lengths_max 8192
 
