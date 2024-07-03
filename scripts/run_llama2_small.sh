@@ -6,7 +6,7 @@ MODEL=meta-llama/Llama-2-7b-chat-hf
 source venv/bin/activate
 
 python -m needlehaystack.run \
-    --provider local \
+    --provider llama2 \
     --model_name $MODEL \
     --results_dir ./results/linear_10x10_llama_2-7b-chat-hf \
     --num_concurrent_requests 10 \

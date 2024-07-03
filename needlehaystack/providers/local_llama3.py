@@ -11,7 +11,7 @@ import tiktoken
 from .model import ModelProvider
 
 
-class LocalLlama(ModelProvider):
+class LocalLlama3(ModelProvider):
     """
     A wrapper class for interacting with OpenAI's API, providing methods to encode text, generate prompts,
     evaluate models, and create LangChain runnables for language model interactions.

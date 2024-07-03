@@ -6,7 +6,7 @@ from jsonargparse import CLI
 
 from . import LLMNeedleHaystackTester, LLMMultiNeedleHaystackTester
 from .evaluators import Evaluator, LangSmithEvaluator, OpenAIEvaluator
-from .providers import Anthropic, ModelProvider, OpenAI, Cohere, LocalLlama
+from .providers import Anthropic, ModelProvider, OpenAI, Cohere, LocalLlama2, LocalLlama3
 
 load_dotenv()
 
@@ -67,8 +67,10 @@ def get_model_to_test(args: CommandArgs) -> ModelProvider:
             return Anthropic(model_name=args.model_name)
         case "cohere":
             return Cohere(model_name=args.model_name)
-        case "local":
-            return LocalLlama(model_name=args.model_name)
+        case "llama2":
+            return LocalLlama2(model_name=args.model_name)
+        case "llama3":
+            return LocalLlama3(model_name=args.model_name)
         case _:
             raise ValueError(f"Invalid provider: {args.provider}")
 

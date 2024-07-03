@@ -113,7 +113,9 @@ class LLMNeedleHaystackTester:
         self.print_ongoing_status = print_ongoing_status
         self.testing_results = []
 
-        print(f"Results will be saved to {self.results_dir}...")
+        clog(f"Results will be saved to {self.results_dir}...", "green")
+        clog(f"num_concurrent_requests: {self.num_concurrent_requests}", "green")
+
 
         if context_lengths is None:
             if context_lengths_min is None or context_lengths_max is None or context_lengths_num_intervals is None:
