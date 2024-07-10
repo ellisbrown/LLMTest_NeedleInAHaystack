@@ -15,8 +15,7 @@ python -m needlehaystack.run \
     --context_lengths_max $MAX_CTX_LEN \
     --haystack_dir "PassKey" \
     --needle "The pass key is 9054. Remember it. 9054 is the pass key." \
-    --retrieval_question "What is the pass key? The pass key is" \
-    --results_dir ./results/passkey_llama3-8b-instruct_test
+    --retrieval_question "What is the pass key? The pass key is"
 
 
 # generate plot
