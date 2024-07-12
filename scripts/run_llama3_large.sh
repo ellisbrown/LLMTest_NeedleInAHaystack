@@ -3,10 +3,10 @@
 export NIAH_EVALUATOR_API_KEY=$OPENAI_API_KEY
 MODEL=meta-llama/Meta-Llama-3-8B-Instruct
 
-MIN_CTX_LEN=128
-MAX_CTX_LEN=8192
-N_CTX=35
-N_DEPTH=35
+MIN_CTX_LEN=512
+MAX_CTX_LEN=8704  # 8192 + 512
+N_CTX=33
+N_DEPTH=33
 
 OUTPUT_DIR=./results/linear_${N_CTX}x${N_DEPTH}_llama_3-8b-instruct
 

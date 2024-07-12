@@ -3,10 +3,10 @@
 export NIAH_EVALUATOR_API_KEY=$OPENAI_API_KEY
 MODEL=meta-llama/Llama-2-7b-chat-hf
 
-MIN_CTX_LEN=512
-MAX_CTX_LEN=4608  # 4096 + 512
-N_CTX=33
-N_DEPTH=33
+MIN_CTX_LEN=128
+MAX_CTX_LEN=4096
+N_CTX=17
+N_DEPTH=17
 OUTPUT_DIR=./results/linear_${MIN_CTX_LEN}-${MAX_CTX_LEN}_${N_CTX}x${N_DEPTH}_llama_2-7b-chat-hf
 
 source venv/bin/activate

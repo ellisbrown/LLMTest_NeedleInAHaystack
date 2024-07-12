@@ -9,6 +9,5 @@ python -m needlehaystack.run \
     --provider llama2 \
     --model_name $MODEL \
     --document_depth_percents "[50]" \
-    --context_lengths "[2000]"
-
-
+    --context_lengths "[2000]" \
+    --results_dir ./results/test_llama2-7b-chat-hf
