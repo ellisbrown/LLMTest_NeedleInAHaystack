@@ -219,12 +219,12 @@ class LLMNeedleHaystackTester:
             print(f"-- Test Summary --\nDuration: {test_elapsed_time:.1f} seconds\nContext: {context_length} tokens\nDepth: {depth_percent}%\nScore: {score}\nResponse: {response}\n")
 
         if self.save_contexts:
-            context_file_location = f'{self.model_name.replace(".", "_")}_len_{context_length}_depth_{int(depth_percent * 100)}'
+            context_filename = f'len_{context_length}_depth_{int(depth_percent * 100)}'
+            context_file_location = os.path.join("contexts", self.haystack_dir, self.model_name.replace(".", "_"), context_filename)
+            os.makedirs(os.path.dirname(context_file_location), exist_ok=True)
             results['file_name'] = context_file_location
             # Save the context to file for retesting
-            if not os.path.exists('contexts'):
-                os.makedirs('contexts')
-            with open(f'contexts/{context_file_location}_context.txt', 'w') as f:
+            with open(f'{context_file_location}_context.txt', 'w') as f:
                 f.write(context)
 
         if self.save_results:
@@ -233,7 +233,7 @@ class LLMNeedleHaystackTester:
                 os.makedirs(self.results_dir)
             
             # Save the result to file for retesting
-            results_file = f'{context_file_location}_results.json'
+            results_file = f'{context_filename}_results.json'
             results_filepath = os.path.join(self.results_dir, results_file)
             with open(results_filepath, 'w') as f:
                 json.dump(results, f)
@@ -308,7 +308,12 @@ class LLMNeedleHaystackTester:
             tokens_new_context = tokens_context[:insertion_point]
 
             # We want to make sure that we place our needle at a sentence break so we first see what token a '.' is
-            period_tokens = self.model_to_test.encode_text_to_tokens('.')
+            # period_tokens = self.model_to_test.encode_text_to_tokens('.')
+            
+            """NOTE: end-of-word periods are tokenized separately, so we need to account for them. o/w could end up at beginning"""
+            single_period_token_id = self.model_to_test.tokenizer.encode(".", add_special_tokens=False)
+            end_of_word_period_token_id = self.model_to_test.tokenizer.encode("word.", add_special_tokens=False)[-1]
+            period_tokens = [single_period_token_id, end_of_word_period_token_id]
             
             # Then we iterate backwards until we find the first period
             while tokens_new_context and tokens_new_context[-1] not in period_tokens:
@@ -341,6 +346,10 @@ class LLMNeedleHaystackTester:
     @lru_cache
     def encode_and_trim(self, context, context_length):
         tokens = self.model_to_test.encode_text_to_tokens(context)
+        
+        # add the buffer to the context length
+        context_length += self.final_context_length_buffer
+
         if len(tokens) > context_length:
             context = self.model_to_test.decode_tokens(tokens, context_length)
         return context
