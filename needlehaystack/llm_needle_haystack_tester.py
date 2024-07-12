@@ -218,25 +218,23 @@ class LLMNeedleHaystackTester:
         if self.print_ongoing_status:
             print(f"-- Test Summary --\nDuration: {test_elapsed_time:.1f} seconds\nContext: {context_length} tokens\nDepth: {depth_percent}%\nScore: {score}\nResponse: {response}\n")
 
+        context_filename = f'len_{context_length}_depth_{int(depth_percent * 100)}'
+        if self.save_results:
+            
+            # Save the result to file for retesting
+            results_file = f'{context_filename}_results.json'
+            results_filepath = os.path.join(self.results_dir, "results", results_file)
+            os.makedirs(os.path.dirname(results_filepath), exist_ok=True)
+            with open(results_filepath, 'w') as f:
+                json.dump(results, f)
+
         if self.save_contexts:
-            context_filename = f'len_{context_length}_depth_{int(depth_percent * 100)}'
-            context_file_location = os.path.join("contexts", self.haystack_dir, self.model_name.replace(".", "_"), context_filename)
+            context_file_location = os.path.join(self.results_dir, "contexts", context_filename)
             os.makedirs(os.path.dirname(context_file_location), exist_ok=True)
             results['file_name'] = context_file_location
             # Save the context to file for retesting
             with open(f'{context_file_location}_context.txt', 'w') as f:
                 f.write(context)
-
-        if self.save_results:
-            # Save the context to file for retesting
-            if not os.path.exists(self.results_dir):
-                os.makedirs(self.results_dir)
-            
-            # Save the result to file for retesting
-            results_file = f'{context_filename}_results.json'
-            results_filepath = os.path.join(self.results_dir, results_file)
-            with open(results_filepath, 'w') as f:
-                json.dump(results, f)
 
         if self.seconds_to_sleep_between_completions:
             await asyncio.sleep(self.seconds_to_sleep_between_completions)
@@ -247,12 +245,14 @@ class LLMNeedleHaystackTester:
         Checks to see if a result has already been evaluated or not
         """
 
-        if not os.path.exists(self.results_dir):
+        results_dir = os.path.join(self.results_dir, "results")
+
+        if not os.path.exists(results_dir):
             return False
         
-        for filename in os.listdir(self.results_dir):
+        for filename in os.listdir(results_dir):
             if filename.endswith('.json'):
-                filepath = os.path.join(self.results_dir, filename)
+                filepath = os.path.join(results_dir, filename)
                 context_length_res, depth_percent_res, version_res, model_res = self.get_file_result(filepath)
                 context_length_met = context_length_res == context_length
                 depth_percent_met = depth_percent_res == depth_percent

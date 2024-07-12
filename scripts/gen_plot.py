@@ -24,6 +24,9 @@ def generate_plot(folder_path: str, model_name: str, max_ctx_len: int):
     # Using glob to find all json files in the directory
     json_files = glob.glob(f"{folder_path}/*.json")
 
+    if len(json_files) == 0:
+        json_files = glob.glob(f"{folder_path}/results/*.json")
+
     # List to hold the data
     data = []
 
