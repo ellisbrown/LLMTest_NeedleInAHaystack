@@ -287,7 +287,8 @@ class LLMNeedleHaystackTester:
         return context
     
     def insert_needle(self, context, depth_percent, context_length):
-        tokens_needle = self.model_to_test.encode_text_to_tokens(self.needle)
+        # ensure that no bos or eos tokens are added to needle
+        tokens_needle = self.model_to_test.tokenizer.encode(self.needle, add_special_tokens=False)
         tokens_context = self.model_to_test.encode_text_to_tokens(context)
 
         # Reducing the context length by 150 buffer. This is to account for system message, the user question, and response.
