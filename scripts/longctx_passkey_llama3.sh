@@ -3,10 +3,13 @@
 export NIAH_EVALUATOR_API_KEY=$OPENAI_API_KEY
 MODEL=meta-llama/Meta-Llama-3-8B-Instruct
 
-MIN_CTX_LEN=4096
-MAX_CTX_LEN=16384
-N_CTX=48
-N_DEPTH=5
+# MIN_CTX_LEN=4096
+# MAX_CTX_LEN=16384
+# N_CTX=48
+MIN_CTX_LEN=6144
+MAX_CTX_LEN=10240
+N_CTX=17  # 16 + end
+N_DEPTH=9  # 8 + end
 OUTPUT_DIR=./results/long_passkey_ctx_${MIN_CTX_LEN}-${MAX_CTX_LEN}_${N_CTX}x${N_DEPTH}_llama_3-8b-instruct
 
 source venv/bin/activate
