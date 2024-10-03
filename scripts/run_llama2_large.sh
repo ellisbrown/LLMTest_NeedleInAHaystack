@@ -7,7 +7,7 @@ MIN_CTX_LEN=512
 MAX_CTX_LEN=4608  # 4096 + 512
 N_CTX=33
 N_DEPTH=33
-OUTPUT_DIR=./results/linear_${MIN_CTX_LEN}-${MAX_CTX_LEN}_${N_CTX}x${N_DEPTH}_llama_2-7b-chat-hf
+OUTPUT_DIR=./results_hard/linear_${MIN_CTX_LEN}-${MAX_CTX_LEN}_${N_CTX}x${N_DEPTH}_llama_2-7b-chat-hf
 
 source venv/bin/activate
 python -m needlehaystack.run \

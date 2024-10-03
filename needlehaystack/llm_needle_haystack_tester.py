@@ -315,9 +315,15 @@ class LLMNeedleHaystackTester:
             single_period_token_id = self.model_to_test.tokenizer.encode(".", add_special_tokens=False)
             end_of_word_period_token_id = self.model_to_test.tokenizer.encode("word.", add_special_tokens=False)[-1]
             period_tokens = [single_period_token_id, end_of_word_period_token_id]
-            
+            special_tokens_word = self.model_to_test.tokenizer.all_special_tokens
+            special_tokens = self.model_to_test.tokenizer.encode(special_tokens_word, add_special_tokens=False)
+
+            ins_tokens = period_tokens + special_tokens
+
+            # import ipdb; ipdb.set_trace()
+
             # Then we iterate backwards until we find the first period
-            while tokens_new_context and tokens_new_context[-1] not in period_tokens:
+            while tokens_new_context and tokens_new_context[-1] not in ins_tokens:
                 insertion_point -= 1
                 tokens_new_context = tokens_context[:insertion_point]
 
@@ -339,7 +345,9 @@ class LLMNeedleHaystackTester:
         base_dir = os.path.abspath(os.path.dirname(__file__))  # Package directory
 
         while self.get_context_length_in_tokens(context) < max_context_length:
-            for file in glob.glob(os.path.join(base_dir, self.haystack_dir, "*.txt")):
+            files = glob.glob(os.path.join(base_dir, self.haystack_dir, "*.txt"))
+            priority_files = glob.glob(os.path.join(base_dir, self.haystack_dir, "_*.txt"))
+            for file in priority_files + files:
                 with open(file, 'r') as f:
                     context += f.read()
         return context
